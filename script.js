@@ -1,8 +1,8 @@
 // Local development ke liye (backend localhost par run ho raha hai)
-//  const API_BASE_URL = "http://localhost:3000/api/v1";
+// const API_BASE_URL = "http://localhost:3000/api/v1";
 
 // Production (jab deploy kar doge backend ko Render/Railway par)
-const API_BASE_URL = "https://blogbackend-gcc4.onrender.com";
+const API_BASE_URL = "https://blogbackend-gcc4.onrender.com/api/v1";
 
 // Demo user (real app me ye authentication se aayega)
 const CURRENT_USER = "GuestUser";
@@ -62,7 +62,7 @@ function createPostElement(post) {
         </div>
         
         <!-- Likes Section -->
-        <div class="flex items-center justify-between text-gray-500 mb-4">n
+        <div class="flex items-center justify-between text-gray-500 mb-4">
             <button 
                 class="like-btn flex items-center space-x-2 hover:text-red-500 transition-colors duration-200 ${isLiked ? 'text-red-500' : ''}"
                 data-post-id="${post._id}"
