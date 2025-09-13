@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:3000/api/v1";
+const API_URL = "https://blogbackend-1-cxaw.onrender.com/api/v1";
 
 let currentPostId = null;
 
