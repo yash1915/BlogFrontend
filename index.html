@@ -1,52 +1,67 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Awesome Blog</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <title>Blog App - Single Page</title>
+  <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-gray-50 text-gray-800">
+<body>
+  <header>
+    <h1>My Blog</h1>
+    <button onclick="showSection('home')">Home</button>
+    <button onclick="showSection('create')">Create Post</button>
+  </header>
 
-    <div class="container mx-auto p-4 md:p-8">
-        
-        <!-- Header -->
-        <header class="text-center mb-8 md:mb-12">
-            <h1 class="text-4xl md:text-5xl font-bold text-gray-900">Tech Chronicles</h1>
-            <p class="text-gray-600 mt-2">Your daily dose of tech news and insights.</p>
-        </header>
+  <!-- Home Page -->
+  <div id="home" class="container">
+    <h2>All Posts</h2>
+    <div id="posts"></div>
+  </div>
 
-        <!-- Create Post Form -->
-        <div class="mb-12 bg-white p-6 rounded-xl shadow-md">
-            <h2 class="text-2xl font-semibold mb-4 text-gray-800">Create a New Post</h2>
-            <form id="createPostForm">
-                <div class="mb-4">
-                    <label for="title" class="block text-gray-700 font-medium mb-2">Title</label>
-                    <input type="text" id="title" name="title" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="Enter post title...">
-                </div>
-                <div class="mb-4">
-                    <label for="body" class="block text-gray-700 font-medium mb-2">Content</label>
-                    <textarea id="body" name="body" rows="5" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="Write your blog post here..."></textarea>
-                </div>
-                <button type="submit" class="w-full sm:w-auto bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-transform transform hover:scale-105">
-                    Publish Post
-                </button>
-            </form>
-        </div>
+  <!-- Create Post Page -->
+  <div id="create" class="container hidden">
+    <h2>Create a New Post</h2>
+    <form id="create-form">
+      <label>Title:</label><br>
+      <input type="text" id="title" required><br><br>
+      
+      <label>Content:</label><br>
+      <textarea id="content" rows="5" required></textarea><br><br>
 
-        <!-- Blog Posts Section -->
-        <div>
-            <h2 class="text-3xl font-bold mb-6 text-gray-900 border-b pb-2">Latest Posts</h2>
-            <div id="postsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                <!-- Posts will be dynamically inserted here -->
-            </div>
-        </div>
-        
-    </div>
+      <button type="submit">Create</button>
+    </form>
+  </div>
 
-    <script src="script.js"></script>
+  <!-- Post Detail Page -->
+  <div id="post-detail" class="container hidden"></div>
+
+  <!-- Comment Section -->
+  <div id="comment-section" class="container hidden">
+    <h3>Add Comment</h3>
+    <form id="comment-form">
+      <label>Your Name:</label><br>
+      <input type="text" id="comment-user" placeholder="Enter your name"><br><br>
+      
+      <label>Comment:</label><br>
+      <textarea id="comment-text" rows="3" required></textarea><br><br>
+      
+      <button type="submit">Add Comment</button>
+    </form>
+  </div>
+
+  <!-- Comments List -->
+  <div id="comments-container" class="container hidden">
+    <h3>Comments</h3>
+    <div id="comments"></div>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    // Initial load
+    showSection('home');
+    loadPosts();
+    document.getElementById("create-form").addEventListener("submit", createPost);
+    document.getElementById("comment-form").addEventListener("submit", addComment);
+  </script>
 </body>
 </html>
-

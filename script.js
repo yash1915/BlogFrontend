@@ -1,190 +1,258 @@
-// Local development ke liye (backend localhost par run ho raha hai)
-// const API_BASE_URL = "http://localhost:3000/api/v1";
+const API_URL = "http://localhost:3000/api/v1";
 
-// Production (jab deploy kar doge backend ko Render/Railway par)
-const API_BASE_URL = "https://blogbackend-gcc4.onrender.com/api/v1";
+let currentPostId = null;
 
-// Demo user (real app me ye authentication se aayega)
-const CURRENT_USER = "GuestUser";
+// -------------------- SHOW/HIDE SECTIONS --------------------
+function showSection(section) {
+  document.getElementById("home").classList.add("hidden");
+  document.getElementById("create").classList.add("hidden");
+  document.getElementById("post-detail").classList.add("hidden");
+  document.getElementById("comment-section").classList.add("hidden");
+  document.getElementById("comments-container").classList.add("hidden");
 
-const createPostForm = document.getElementById('createPostForm');
-const postsContainer = document.getElementById('postsContainer');
-
-/**
- * Fetches all posts from the server and renders them.
- */
-async function fetchAndRenderPosts() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/posts`);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const { data } = await response.json();
-
-        postsContainer.innerHTML = ''; // Clear old posts
-
-        if (!data || data.length === 0) {
-            postsContainer.innerHTML = `<p class="text-gray-500 col-span-full text-center">No posts yet. Be the first to create one!</p>`;
-        } else {
-            data.forEach(post => {
-                const postElement = createPostElement(post);
-                postsContainer.appendChild(postElement);
-            });
-        }
-    } catch (error) {
-        console.error("Error fetching posts:", error);
-        postsContainer.innerHTML = `<p class="text-red-500 col-span-full text-center">Failed to load posts. Please try again later.</p>`;
-    }
+  document.getElementById(section).classList.remove("hidden");
 }
 
-/**
- * Creates the HTML element for a single blog post.
- */
-function createPostElement(post) {
-    const article = document.createElement('article');
-    article.className = 'post-card bg-white p-6 rounded-xl shadow-md flex flex-col';
+// -------------------- LOAD POSTS --------------------
+async function loadPosts() {
+  try {
+    const res = await fetch(`${API_URL}/posts`);
+    const data = await res.json();
+    console.log("API response (posts):", data);
 
-    const userLike = post.likes?.find(like => like.user === CURRENT_USER);
-    const isLiked = !!userLike;
-
-    let commentsHtml = '<p class="text-sm text-gray-500">No comments yet.</p>';
-    if (post.comments && post.comments.length > 0) {
-        commentsHtml = post.comments.map(comment => `
-            <div class="py-2">
-                <p class="font-semibold text-gray-700">${comment.user}</p>
-                <p class="text-gray-600">${comment.body}</p>
-            </div>
-        `).join('');
+    const posts = data.posts;
+    if (!Array.isArray(posts)) {
+      console.error("❌ Expected posts array but got:", data);
+      return;
     }
 
-    article.innerHTML = `
-        <div class="flex-grow">
-            <h3 class="text-xl font-bold text-gray-900 mb-2">${post.title}</h3>
-            <p class="text-gray-600 mb-4">${post.body}</p>
-        </div>
-        
-        <!-- Likes Section -->
-        <div class="flex items-center justify-between text-gray-500 mb-4">
-            <button 
-                class="like-btn flex items-center space-x-2 hover:text-red-500 transition-colors duration-200 ${isLiked ? 'text-red-500' : ''}"
-                data-post-id="${post._id}"
-                data-is-liked="${isLiked}"
-                ${isLiked ? `data-like-id="${userLike._id}"` : ''}
-            >
-                <svg class="w-6 h-6" fill="${isLiked ? 'currentColor' : 'none'}" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.636l1.318-1.318a4.5 4.5 0 116.364 6.364L12 20.364l-7.682-7.682a4.5 4.5 0 010-6.364z"></path></svg>
-                <span>${post.likes?.length || 0} ${post.likes?.length === 1 ? 'Like' : 'Likes'}</span>
-            </button>
-            <span class="text-sm">${post.comments?.length || 0} ${post.comments?.length === 1 ? 'Comment' : 'Comments'}</span>
-        </div>
+    const postsDiv = document.getElementById("posts");
+    postsDiv.innerHTML = "";
 
-        <!-- Comments Display -->
-        <div class="border-t pt-4">
-            <h4 class="font-semibold mb-2 text-gray-700">Comments</h4>
-            <div class="space-y-2 max-h-40 overflow-y-auto">
-                ${commentsHtml}
-            </div>
-        </div>
+    posts.forEach(post => {
+      const div = document.createElement("div");
+      div.className = "post";
+      div.innerHTML = `
+        <h3>${post.title}</h3>
+        <p>${post.body?.substring(0, 100) || ""}...</p>
+        <p><b>Likes:</b> ${post.likes?.length || 0}</p>
+        <button onclick="openPost('${post._id}')">View</button>
+        <button onclick="deletePost('${post._id}')">Delete</button>
+      `;
+      postsDiv.appendChild(div);
+    });
+  } catch (err) {
+    console.error("Error loading posts:", err);
+  }
+}
 
-        <!-- Add Comment Form -->
-        <form class="add-comment-form mt-4 border-t pt-4">
-            <textarea name="commentBody" rows="2" required class="w-full px-3 py-2 border rounded-lg" placeholder="Add a comment..."></textarea>
-            <input type="hidden" name="postId" value="${post._id}">
-            <button type="submit" class="mt-2 bg-gray-200 py-1 px-4 rounded-lg hover:bg-gray-300">Submit</button>
-        </form>
+// -------------------- CREATE POST --------------------
+async function createPost(e) {
+  e.preventDefault();
+  const title = document.getElementById("title").value.trim();
+  const body = document.getElementById("content").value.trim();
+
+  if (!title || !body) {
+    alert("Title and body are required!");
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_URL}/posts/create`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, body })
+    });
+
+    const data = await res.json();
+    console.log("Post created:", data);
+
+    if (!res.ok) {
+      alert("Failed to create post: " + (data.error || res.statusText));
+      return;
+    }
+
+    document.getElementById("title").value = "";
+    document.getElementById("content").value = "";
+
+    showSection("home");
+    loadPosts();
+  } catch (err) {
+    console.error("Error creating post:", err);
+  }
+}
+
+// -------------------- OPEN POST DETAIL --------------------
+async function openPost(id) {
+  currentPostId = id;
+
+  try {
+    const res = await fetch(`${API_URL}/posts/${id}`);
+    const data = await res.json();
+    const post = data.post;
+
+    if (!post) {
+      console.error("Post not found with id:", id);
+      return;
+    }
+
+    const likedBy = post.likes?.map(like => like.user).join(", ") || "No likes yet";
+
+    const detailDiv = document.getElementById("post-detail");
+    detailDiv.innerHTML = `
+      <h2>${post.title}</h2>
+      <p>${post.body}</p>
+      <button class="like-btn" onclick="likePost('${id}')">
+        Like (${post.likes?.length || 0})
+      </button>
+      <button onclick="deletePost('${id}')">Delete Post</button>
+      <button onclick="showSection('home'); loadPosts();">Back</button>
+      <p id="liked-by"><b>Liked by:</b> ${likedBy}</p>
     `;
-    return article;
+
+    showSection("post-detail");
+    document.getElementById("comment-section").classList.remove("hidden");
+    document.getElementById("comments-container").classList.remove("hidden");
+
+    loadComments(id);
+  } catch (err) {
+    console.error("Error opening post:", err);
+  }
 }
 
-// Create Post
-createPostForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const title = e.target.title.value;
-    const body = e.target.body.value;
+// -------------------- ADD COMMENT --------------------
+async function addComment(e) {
+  e.preventDefault();
+  if (!currentPostId) return;
 
-    try {
-        const response = await fetch(`${API_BASE_URL}/posts/create`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title, body }),
-        });
+  const text = document.getElementById("comment-text").value.trim();
+  const user = document.getElementById("comment-user").value.trim() || "AnonymousUser";
 
-        if (!response.ok) throw new Error('Failed to create post');
+  if (!text) {
+    alert("Comment cannot be empty!");
+    return;
+  }
 
-        e.target.reset();
-        await fetchAndRenderPosts();
-    } catch (error) {
-        console.error("Error creating post:", error);
-        alert("Could not create post. Please try again.");
-    }
-});
+  try {
+    const res = await fetch(`${API_URL}/comments/create`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        post: currentPostId,
+        user: user,
+        body: text
+      })
+    });
 
-// Likes & Comments (Event Delegation)
-postsContainer.addEventListener('click', async (e) => {
-    const likeBtn = e.target.closest('.like-btn');
-    if (likeBtn) {
-        const postId = likeBtn.dataset.postId;
-        const isLiked = likeBtn.dataset.isLiked === 'true';
+    const data = await res.json();
+    console.log("Comment added:", data);
 
-        if (isLiked) {
-            await handleUnlike(postId, likeBtn.dataset.likeId);
-        } else {
-            await handleLike(postId);
-        }
-    }
-});
-
-postsContainer.addEventListener('submit', async (e) => {
-    if (e.target.classList.contains('add-comment-form')) {
-        e.preventDefault();
-        const postId = e.target.postId.value;
-        const body = e.target.commentBody.value;
-        await handleAddComment(postId, body, e.target);
-    }
-});
-
-// Like
-async function handleLike(postId) {
-    try {
-        const response = await fetch(`${API_BASE_URL}/likes/like`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ post: postId, user: CURRENT_USER }),
-        });
-        if (!response.ok) throw new Error('Like request failed');
-        await fetchAndRenderPosts();
-    } catch (error) {
-        console.error("Error liking post:", error);
-    }
+    document.getElementById("comment-text").value = "";
+    document.getElementById("comment-user").value = "";
+    loadComments(currentPostId);
+  } catch (err) {
+    console.error("Error adding comment:", err);
+  }
 }
 
-// Unlike
-async function handleUnlike(postId, likeId) {
-    try {
-        const response = await fetch(`${API_BASE_URL}/likes/unlike`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ post: postId, like: likeId }),
-        });
-        if (!response.ok) throw new Error('Unlike request failed');
-        await fetchAndRenderPosts();
-    } catch (error) {
-        console.error("Error unliking post:", error);
+// -------------------- LOAD COMMENTS --------------------
+async function loadComments(postId) {
+  try {
+    const res = await fetch(`${API_URL}/comments/${postId}`);
+    const data = await res.json();
+    const comments = data.comments;
+
+    const commentsDiv = document.getElementById("comments");
+    commentsDiv.innerHTML = "";
+
+    if (!comments || comments.length === 0) {
+      commentsDiv.innerHTML += "<p>No comments yet.</p>";
+      return;
     }
+
+    comments.forEach(c => {
+      const div = document.createElement("div");
+      div.className = "comment";
+      div.innerHTML = `
+        <p><b>${c.user}:</b> ${c.body}</p>
+        <button onclick="deleteComment('${c._id}')">Delete</button>
+      `;
+      commentsDiv.appendChild(div);
+    });
+  } catch (err) {
+    console.error("Error loading comments:", err);
+  }
 }
 
-// Add Comment
-async function handleAddComment(postId, body, form) {
-    try {
-        const response = await fetch(`${API_BASE_URL}/comments/create`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ post: postId, user: CURRENT_USER, body }),
-        });
-        if (!response.ok) throw new Error('Comment request failed');
-        form.reset();
-        await fetchAndRenderPosts();
-    } catch (error) {
-        console.error("Error adding comment:", error);
+// -------------------- LIKE/UNLIKE POST --------------------
+async function likePost(postId) {
+  try {
+    const user = prompt("Enter your name for like/unlike") || "AnonymousUser";
+
+    // ✅ fixed endpoint: /likes/toggle
+    const res = await fetch(`${API_URL}/likes/toggle`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ post: postId, user })
+    });
+
+    const data = await res.json();
+    console.log("Like/Unlike response:", data);
+
+    if (!res.ok) {
+      alert("Error while liking post: " + (data.error || res.statusText));
+      return;
     }
+
+    // ✅ Updated likes list from API
+    const likes = data.post.likes || [];
+    const likedByText = likes.map(like => like.user).join(", ") || "No likes yet";
+
+    // ✅ Update UI
+    const detailDiv = document.getElementById("post-detail");
+    const likeBtn = detailDiv.querySelector(".like-btn");
+    const likedByPara = document.getElementById("liked-by");
+
+    likeBtn.innerHTML = `Like (${likes.length})`;
+    likedByPara.innerHTML = `<b>Liked by:</b> ${likedByText}`;
+  } catch (err) {
+    console.error("Error liking/unliking post:", err);
+  }
 }
 
-// Initial load
-document.addEventListener('DOMContentLoaded', fetchAndRenderPosts);
+// -------------------- DELETE POST --------------------
+async function deletePost(postId) {
+  if (!confirm("Are you sure you want to delete this post?")) return;
+
+  try {
+    const res = await fetch(`${API_URL}/posts/${postId}`, {
+      method: "DELETE",
+    });
+
+    const data = await res.json();
+    console.log("Delete post response:", data);
+
+    showSection("home");
+    loadPosts();
+  } catch (err) {
+    console.error("Error deleting post:", err);
+  }
+}
+
+// -------------------- DELETE COMMENT --------------------
+async function deleteComment(commentId) {
+  if (!confirm("Are you sure you want to delete this comment?")) return;
+
+  try {
+    const res = await fetch(`${API_URL}/comments/${commentId}`, {
+      method: "DELETE",
+    });
+
+    const data = await res.json();
+    console.log("Delete comment response:", data);
+
+    loadComments(currentPostId);
+  } catch (err) {
+    console.error("Error deleting comment:", err);
+  }
+}
