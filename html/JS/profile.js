@@ -1,6 +1,9 @@
 document.addEventListener("DOMContentLoaded", () => {
     // API URLs for different parts of the backend
-    const API_URL_AUTH = "http://localhost:3000/api/v1/auth";
+    const IS_DEVELOPMENT = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const API_URL_AUTH = IS_DEVELOPMENT
+      ? "http://localhost:3000/api/v1/auth"
+      : "https://blogbackend-gcc4.onrender.com/api/v1/auth";
     let currentUser = null;
 
     // DOM Element Selectors

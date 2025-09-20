@@ -1,6 +1,9 @@
 document.addEventListener("DOMContentLoaded", () => {
   const signupForm = document.getElementById("signup-form");
-  const API_URL = "http://localhost:3000/api/v1";
+  const IS_DEVELOPMENT = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  const API_URL = IS_DEVELOPMENT
+    ? "http://localhost:3000/api/v1"
+    : "https://blogbackend-gcc4.onrender.com/api/v1";
 
   signupForm.addEventListener("submit", async (e) => {
     e.preventDefault();
