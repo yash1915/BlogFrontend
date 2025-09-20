@@ -2,7 +2,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const signinForm = document.getElementById("signin-form");
 
   if (localStorage.getItem("token")) {
-    window.location.href = "index.html"; // Redirect to index.html instead of home.html
+    window.location.href = "hom.html"; // Redirect to index.html instead of home.html
     return;
   }
 
@@ -24,7 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (data.success && data.token) {
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user)); // Store user data
-        window.location.href = "index.html";
+        window.location.href = "hom.html";
       } else {
         alert(data.message || "Login failed!");
       }

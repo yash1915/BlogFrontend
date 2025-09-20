@@ -28,7 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 localStorage.setItem("token", data.token);
                 localStorage.setItem("user", JSON.stringify(data.user));
                 alert("✅ Signup successful! You are now logged in.");
-                window.location.href = "index.html";
+                window.location.href = "hom.html";
             } else {
                 alert(data.message || "❌ OTP verification failed. Please try again.");
             }
